@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "dev:all": "docker-compose up --build",
+    "dev:admin": "docker-compose up --build digging-admin-front",
+    "dev:front": "docker-compose up --build digging-front",
+    "dev:back": "docker-compose up --build digging-back",
+    "dev:db": "docker-compose up --build db",
+    "shutdown": "docker-compose down"
+  }
+}

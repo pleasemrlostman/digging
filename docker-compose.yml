@@ -1,0 +1,71 @@
+# Docker Compose 파일 버전 (최신 기능을 위해 3.8 사용)
+version: "3.8"
+
+services:
+  # digging-admin-front (React 앱 서비스, 정적 파일을 Nginx로 서빙)
+  digging-admin-front:
+    build:
+      context: ./digging-admin-front
+      dockerfile: Dockerfile
+    # 호스트의 3001번 포트를 컨테이너의 80번 포트(Nginx)로 연결
+    ports:
+      - "3001:80"
+    networks:
+      - app-network
+
+  # digging-front (Next.js 앱 서비스, SSR 또는 CSR 기반 프론트엔드)
+  digging-front:
+    build:
+      context: ./digging-front
+      dockerfile: Dockerfile
+    # 호스트의 3000번 포트를 컨테이너의 3000번 포트로 연결 (Next.js 기본 포트)
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+  # digging-back (Nest.js 백엔드 API 서비스)
+  digging-back:
+    build:
+      context: ./digging-back
+      dockerfile: Dockerfile
+    depends_on:
+      - digging-db
+    environment:
+      # DB 접속 정보 역시 .env에서 가져옴
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASS=${POSTGRES_PASSWORD}
+    # 호스트와 컨테이너 모두 3002번 포트를 사용 (Nest.js 기본 포트)
+    ports:
+      - "3002:3002"
+    networks:
+      - app-network
+
+        # PostgreSQL 데이터베이스 서비스
+  # PostgreSQL 데이터베이스 서비스
+  digging-db:
+    image: postgres:13 # PostgreSQL 공식 이미지
+    restart: always # 중단 시 자동 재시작
+    environment:
+      # .env에 정의한 변수 참조
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      # 호스트 포트도 .env로 관리
+      - "${DB_PORT}:5432"
+    networks:
+      - app-network
+
+# 영구 데이터 저장을 위한 볼륨
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge
