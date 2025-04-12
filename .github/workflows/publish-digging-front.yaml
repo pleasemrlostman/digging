@@ -1,0 +1,48 @@
+name: "prod: Build & Push digging-front to ECR"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "digging-front/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "digging-front/**"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build & Push digging-front
+        uses: docker/build-push-action@v3
+        with:
+          context: "digging-front"
+          file: "digging-front/Dockerfile"
+          push: true
+          tags: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/digging:digging-front-${{ github.sha }}
+
+      # ▼ 이후 ECS 배포 스텝 추가 시 여기에 삽입 ▼
+      # - name: Deploy to ECS
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     ...
